@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Investor Login | Batra Hedge</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+
+<style>
+
+body{
+    margin:0;
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:#000;
+    font-family:'Inter',sans-serif;
+    color:white;
+}
+
+.login-box{
+    width:400px;
+    padding:50px;
+    background:#111;
+    border:1px solid #333;
+}
+
+h1{
+    font-family:'Cinzel',serif;
+    margin-bottom:30px;
+    text-align:center;
+}
+
+.input-group{
+    margin-bottom:20px;
+}
+
+input{
+    width:100%;
+    padding:14px;
+    background:#000;
+    border:1px solid #333;
+    color:white;
+    font-size:15px;
+}
+
+button{
+    width:100%;
+    padding:14px;
+    background:white;
+    color:black;
+    border:none;
+    cursor:pointer;
+    font-weight:600;
+    transition:0.3s;
+    margin-top:10px;
+}
+
+button:hover{
+    background:#ccc;
+}
+
+.google-btn{
+    background:#db4437;
+    color:white;
+}
+
+.google-btn:hover{
+    background:#c23321;
+}
+
+.links{
+    text-align:center;
+    margin-top:20px;
+}
+
+.links a{
+    color:white;
+    text-decoration:none;
+    display:block;
+    margin-top:10px;
+}
+
+#error{
+    color:red;
+    margin-top:15px;
+    text-align:center;
+}
+
+.hidden{
+    display:none;
+}
+
+#forgotPasswordLink{
+    color:#888;
+    font-size:14px;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+#forgotPasswordLink:hover{
+    color:white;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="login-box">
+
+    <h1>Batra Hedge</h1>
+
+    <!-- EMAIL LOGIN -->
+    <form id="loginForm">
+
+        <div class="input-group">
+            <input 
+                type="email" 
+                id="email" 
+                placeholder="Investor Email" 
+                required
+                oninput="checkEmail()"
+            >
+        </div>
+
+        <div class="input-group">
+            <input type="password" id="password" placeholder="Password" required>
+        </div>
+
+        <button type="submit">Login</button>
+
+    </form>
+
+    <!-- GOOGLE LOGIN -->
+    <button class="google-btn" onclick="googleLogin()">
+        Sign in with Google
+    </button>
+
+    <div class="links">
+
+        <a href="#" id="forgotPasswordLink" class="hidden" onclick="goToForgotPassword(event)">
+            Forgot Password?
+        </a>
+
+        <a href="signup.html">
+            Create New Account
+        </a>
+
+    </div>
+
+    <p id="error"></p>
+
+</div>
+
+<script>
+
+/////////////////////////////////////////////////
+// ALREADY LOGGED IN
+/////////////////////////////////////////////////
+
+if(localStorage.getItem("isLoggedIn") === "true"){
+    window.location.href = "index.html";
+}
+
+/////////////////////////////////////////////////
+// FIREBASE CONFIG
+/////////////////////////////////////////////////
+
+const firebaseConfig = {
+    apiKey: "AIzaSyBkHHbP1_GP_h9YAChBc4mVguzY7NkCyd4",
+    authDomain: "batra-hedge.firebaseapp.com",
+    projectId: "batra-hedge",
+    storageBucket: "batra-hedge.firebasestorage.app",
+    messagingSenderId: "576032543561",
+    appId: "1:576032543561:web:2f25f82fdf796f38430098"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+
+const provider = new firebase.auth.GoogleAuthProvider();
+
+/////////////////////////////////////////////////
+// SHOW FORGOT PASSWORD WHEN EMAIL ENTERED
+/////////////////////////////////////////////////
+
+function checkEmail(){
+    const email = document.getElementById("email").value;
+    const forgotLink = document.getElementById("forgotPasswordLink");
+    
+    if(email && email.includes("@")){
+        forgotLink.classList.remove("hidden");
+    } else {
+        forgotLink.classList.add("hidden");
+    }
+}
+
+function goToForgotPassword(event){
+    event.preventDefault();
+    const email = document.getElementById("email").value;
+    
+    // Pass email to forgot password page
+    localStorage.setItem("resetEmail", email);
+    window.location.href = "forgotPassword.html";
+}
+
+/////////////////////////////////////////////////
+// GOOGLE LOGIN
+/////////////////////////////////////////////////
+
+function googleLogin() {
+
+    auth.signInWithPopup(provider)
+
+    .then((result) => {
+
+        const user = result.user;
+
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("userName", user.displayName);
+        localStorage.setItem("userEmail", user.email);
+
+        alert("Welcome, " + user.displayName);
+
+        window.location.href = "index.html";
+
+    })
+
+    .catch((error) => {
+
+        console.log(error);
+
+        document.getElementById("error").innerText =
+        error.message;
+
+    });
+
+}
+
+/////////////////////////////////////////////////
+// EMAIL LOGIN
+/////////////////////////////////////////////////
+
+document.getElementById("loginForm")
+.addEventListener("submit", async (e) => {
+
+    e.preventDefault();
+
+    const email =
+    document.getElementById("email").value;
+
+    const password =
+    document.getElementById("password").value;
+
+    try {
+
+        const response = await fetch(
+            "https://batra-backend.onrender.com/login",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    email: email,
+                    password: password
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        console.log(data);
+
+        if(response.ok){
+
+            localStorage.setItem("isLoggedIn", "true");
+
+            localStorage.setItem(
+                "userName",
+                data.name
+            );
+
+            localStorage.setItem(
+                "userEmail",
+                email
+            );
+
+            alert("Welcome, " + data.name);
+
+            window.location.href = "index.html";
+
+        } else {
+
+            document.getElementById("error").innerText =
+            data.message;
+
+        }
+
+    } catch(error){
+
+        console.log(error);
+
+        document.getElementById("error").innerText =
+        "Cannot connect to server";
+
+    }
+
+});
+
+</script>
+
+</body>
+</html>
